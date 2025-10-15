@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IbarFlow Web Dialer</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    * { box-sizing: border-box; transition: all 0.3s ease; }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #5D26C1, #a17fe0, #59C173);
+      background-size: 400% 400%;
+      animation: gradientShift 10s ease infinite;
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(14px);
+      border-radius: 20px;
+      padding: 40px 50px;
+      text-align: center;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-weight: 700;
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      margin-bottom: 25px;
+      opacity: 0.9;
+    }
+
+    .input-box {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+
+    .input-box i {
+      color: white;
+      margin-right: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      color: white;
+      outline: none;
+    }
+
+    input::placeholder { color: rgba(255, 255, 255, 0.6); }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(90deg, #00C9A7, #92FE9D);
+      color: #000;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+    button:active { transform: translateY(1px); }
+
+    #status {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0.9;
+      min-height: 22px;
+    }
+
+    .status-ok { color: #8efaa7; }
+    .status-error { color: #ffaaaa; }
+
+    .call-history {
+      margin-top: 25px;
+      text-align: left;
+      font-size: 13px;
+      max-height: 100px;
+      overflow-y: auto;
+      opacity: 0.9;
+    }
+
+    .call-history h3 {
+      margin-bottom: 8px;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      padding-bottom: 4px;
+    }
+
+    .call-history ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .call-history li {
+      margin: 4px 0;
+      opacity: 0.9;
+    }
+
+    .footer {
+      margin-top: 25px;
+      font-size: 13px;
+      opacity: 0.7;
+    }
+
+    .footer span { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📞 IbarFlow Dialer</h1>
+    <p class="subtitle">Call US clients directly using your Twilio number</p>
+
+    <div class="input-box">
+      <i data-feather="phone"></i>
+      <input type="text" id="phoneNumber" placeholder="Enter US number e.g. +14155551234">
+    </div>
+
+    <button onclick="makeCall()">Call Now</button>
+    <p id="status"></p>
+
+    <div class="call-history" id="callHistory">
+      <h3>Recent Calls</h3>
+      <ul id="historyList"></ul>
+    </div>
+
+    <div class="footer">
+      Powered by <span>IbarFlow AI Automations</span>
+    </div>
+  </div>
+
+  <script>
+    feather.replace();
+
+    const historyList = document.getElementById('historyList');
+    const callHistory = [];
+
+    async function makeCall() {
+      const to = document.getElementById('phoneNumber').value.trim();
+      const status = document.getElementById('status');
+      status.className = '';
+      status.textContent = '';
+
+      if (!to.startsWith('+1')) {
+        status.textContent = 'Please enter a valid US number starting with +1';
+        status.className = 'status-error';
+        return;
+      }
+
+      status.textContent = '📡 Calling... Please wait ⏳';
+
+      try {
+        const response = await fetch(
+          'https://ibarflow-dialer-5706.twil.io/call?to=' + encodeURIComponent(to),
+          { method: 'GET' }
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+          status.textContent = '✅ Call initiated successfully! (Call SID: ' + result.sid + ')';
+          status.className = 'status-ok';
+          addToHistory(to);
+        } else {
+          status.textContent = '❌ Error: ' + result.message;
+          status.className = 'status-error';
+        }
+      } catch (err) {
+        status.textContent = '❌ Connection Error: ' + err.message;
+        status.className = 'status-error';
+      }
+    }
+
+    function addToHistory(number) {
+      callHistory.unshift(number);
+      if (callHistory.length > 5) callHistory.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = callHistory
+        .map(num => `<li>📞 ${num}</li>`)
+        .join('');
+    }
+  </script>
+</body>
+</html>
